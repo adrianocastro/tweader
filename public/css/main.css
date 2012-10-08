@@ -1,0 +1,17 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+
+.feed .origin {
+    color: #ba3e3e;
+}
+
+.feed .date {
+    color: green;
+    font-family: monospace;
+}
