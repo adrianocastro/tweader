@@ -1,0 +1,3 @@
+{#tweets}
+    <li><span class="date">{created_at}</span> – <span class="origin">{origin}:</span> {text}</li>
+{/tweets}

@@ -1,5 +1,7 @@
 {
+    "author": "Adriano Castro <ad@adrianocastro.net> (http://adrianocastro.net)",
     "name": "Tweader",
+    "description": "A simple tweet reader with real-time capabilities",
     "version": "0.0.1",
     "private": true,
     "scripts": {
@@ -10,6 +12,7 @@
         "dustjs-linkedin": "*",
         "dustjs-helpers": "*",
         "klei-dust":"*",
-        "async":"*"
+        "async":"*",
+        "socket.io":"*"
     }
 }

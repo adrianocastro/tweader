@@ -4,35 +4,37 @@
 
     <h1>{title}</h1>
 
-    <h2>Your #topics and @feeds</h2>
+    <div>
+        <h2>Your #topics</h2>
 
-    <form action="#" method="post">
-        <div>
-            <label for="name">Search</label>
-            <input type="text" name="q" id="q" value="" tabindex="1">
-            <input type="submit" value="Submit">
-        </div>
-    </form>
+        <form id="topic-search" action="/" method="post">
+            <div>
+                <label for="name">Search</label>
+                <input type="text" name="q" id="q" value="" tabindex="1">
+                <input type="hidden" name="savedTerms" id="savedTerms" value="{#terms}{name},{/terms}">
+                <input type="submit" value="Submit">
+            </div>
+        </form>
 
-    {?terms}
-        <ul>
-        {#terms}
-            <li>{name}</li>
+        {?terms}
+            <ul>
+            {#terms}
+                <li>{name}</li>
+            {/terms}
+            </ul>
+        {:else}
+            <p>Please search for a #topic above.</p>
         {/terms}
-        </ul>
-    {:else}
-        List empty
-    {/terms}
-
-    <h2>Your feed</h2>
-    {?tweets}
-        <ol class="feed">
-        {#tweets}
-            <li><span class="date">{created_at}</span> – <span class="origin">{origin}:</span> {text}</li>
+    </div>
+    <div>
+        <h2>Your feed</h2>
+        {?tweets}
+            <ol class="feed">
+                {>feed /}
+            </ol>
+        {:else}
+            <p>No tweets available at the moment.</p>
         {/tweets}
-        </ol>
-    {:else}
-        No tweets available at the moment
-    {/tweets}
+    </div>
 
 {/content}

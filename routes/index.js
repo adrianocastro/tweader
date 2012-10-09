@@ -60,27 +60,60 @@ function sortTweetsByDate (list) {
     return result;
 };
 
-exports.index = function(req, res){
-    // Read user’s query items
+exports.index = function(req, res, next, globalIo){
+    // console.log('globalIo', globalIo);
+    // globalIo.socket.emit('newtweet', { foo: 'from exports.index bar' });
+    // io.sockets.json.send(..);
 
     // @TODO: read these from the user's input and previous selections (localStorage)
+
+    // Read the user's queried topics as well as previously saved ones
+    var params;
+
+    // Figure out if it's a POST or a GET request and read the params from the correct object in req
+    // @TODO: consider using req.param(name) (http://expressjs.com/api.html#req.param) instead to read q
     if (req.body.q) {
-        var submit      = req.body.submit,
-            queryItems  = req.body.q.split(','),
+        params = req.body;
+    } else if (req.params.json) {
+        params = req.query;
+    }
+
+    console.log('params:', params);
+
+    // If the request defines either GET or POST params it's because we're trying to load new data
+    if (params) {
+        var queryItems  = []
+            savedItems  = []
             terms       = [],
             tweets      = [],
             opts        = {},
             queue       = [];
 
-        queryItems = queryItems.map(function (t) { return t.trim(); });
+        // if the params object as q then it's a post query
+        if (params.q) {
+            queryItems  = params.q.split(',');
+        }
 
-        // var queryItems  = {
-        //         topics : ['#fleetweek', '#americascup', '@bandpage', 'sf giants']
-        //         // , feeds  : ['nefarioustim', 'adrianocastro', 'diff_sky']
-        //     },
+        // if the params object has savedTerms
+        if (params.savedTerms) {
+            savedItems  = params.savedTerms.split(',');
+        }
+
+        if (savedItems.length) {
+            // Merge new query items with previously saved ones
+            queryItems = queryItems.concat(savedItems);
+        }
 
         // Check each topic (can be a hashtag, an @ reference or any query) to process
         if (queryItems.length > 0) {
+            // Trim and remove empty results
+            // @TODO: dedupe results
+            queryItems = queryItems.map(function (item) {
+                return item.trim();
+            }).filter(function (item) {
+                return (item !== '');
+            });
+
             queryItems.forEach(function (topic) {
                 queue.push(function (callback) {
                     opts.host = 'search.twitter.com',
@@ -91,49 +124,41 @@ exports.index = function(req, res){
             });
         }
 
-        // // Check each @ feed to process
-        // if (items.feeds.length > 0) {
-        //     items.feeds.forEach(function(feed) {
-        //         queue.push(function (callback) {
-        //             opts.host = 'api.twitter.com',
-        //             opts.path = '/1/statuses/user_timeline.json?count=5&screen_name=' + encodeURIComponent(feed);
-        //             fetch(opts, callback);
-        //         });
-        //         terms.push({'name' : '@' + feed});
-        //     });
-        // }
-
         // If we have a queue of topics/feeds to process run them in parallel
         if (queue.length > 0) {
             async.parallel(
                 queue,
                 // callback to handle the results
                 function(err, results){
-
-                    // @TODO: consider normalizing the results object for #topics vs @feeds
                     results.forEach(function (result) {
                         if (result.results) {
                             result.results.forEach(function (t) {
                                 t.origin = decodeURIComponent(result.query);
                                 tweets.push(t);
                             })
-                        // } else {
-                        //     result.forEach(function (t) {
-                        //         t.origin = t.user.screen_name;
-                        //         tweets.push(t);
-                        //     });
                         }
                     });
 
                     // Sort tweets by date
                     tweets = sortTweetsByDate(tweets);
 
-                    // if json
-                    // res.send(tweets);
-                    res.render('index', { title: 'Tweader', terms: terms, tweets: tweets });
+                    if (req.params.json) {
+                        // res.send(tweets);
+                        var feedHtml,
+                            termsHtml;
+
+                        res.render('feed', { tweets: tweets }, function(err, html) {
+                            console.log('rendered feed');
+                            console.log('html feed', html);
+                            res.send({tweets: html, terms: terms});
+                        });
+                    }  else {
+                        res.render('index', { title: 'Tweader', terms: terms, tweets: tweets });
+                    }
                 }
             );
         }
+    // If there are no params defined in the request then it's a new page refresh
     } else {
         res.render('index', { title: 'Tweader (empty)' });
     }
