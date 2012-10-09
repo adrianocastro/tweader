@@ -55,51 +55,51 @@ server.listen(app.get('port'), function(){
     console.log("Express server listening on port " + app.get('port'));
 });
 
-// Tell socket.io to listen to our server instance
-var io = socketio.listen(server);
+// // Tell socket.io to listen to our server instance
+// var io = socketio.listen(server);
 
-// io.set('authorization', function (data, accept) {
-//     if (!data.headers.cookie) {
-//         return accept('No cookie transmitted.', false);
-//     }
+// // io.set('authorization', function (data, accept) {
+// //     if (!data.headers.cookie) {
+// //         return accept('No cookie transmitted.', false);
+// //     }
 
-//     data.cookie    = parseCookie(data.headers.cookie);
-//     console.log('data.cookie', data.cookie);
-//     data.sessionID = data.cookie['express.sid'];
-//     console.log('data.sessionID', data.sessionID);
+// //     data.cookie    = parseCookie(data.headers.cookie);
+// //     console.log('data.cookie', data.cookie);
+// //     data.sessionID = data.cookie['express.sid'];
+// //     console.log('data.sessionID', data.sessionID);
 
-//     store.load(data.sessionID, function (err, session) {
-//         console.log('err', err);
-//         console.log('session', session);
-//         if (err || !session) {
-//             return accept('Error', false);
-//         }
+// //     store.load(data.sessionID, function (err, session) {
+// //         console.log('err', err);
+// //         console.log('session', session);
+// //         if (err || !session) {
+// //             return accept('Error', false);
+// //         }
 
-//         data.session = session;
-//         return accept(null, true);
-//     });
+// //         data.session = session;
+// //         return accept(null, true);
+// //     });
+// // });
+
+// io.sockets.on('connection', function (socket) {
+
+//     var tweets = setTimeout(function () {
+//         socket.emit('newtweet', { foo: 'bar' });
+
+//     }, 5000);
+
+//     // var sess = socket.handshake.session;
+//     // socket.log.info(
+//     //     'a socket with sessionID'
+//     //     , socket.handshake.sessionID
+//     //     , 'connected'
+//     // );
+//     // socket.on('set value', function (val) {
+//     //     sess.reload(function () {
+//     //         sess.value = val;
+//     //         sess.touch().save();
+//     //     });
+//     // });
 // });
-
-io.sockets.on('connection', function (socket) {
-
-    var tweets = setTimeout(function () {
-        socket.emit('newtweet', { foo: 'bar' });
-
-    }, 5000);
-
-    // var sess = socket.handshake.session;
-    // socket.log.info(
-    //     'a socket with sessionID'
-    //     , socket.handshake.sessionID
-    //     , 'connected'
-    // );
-    // socket.on('set value', function (val) {
-    //     sess.reload(function () {
-    //         sess.value = val;
-    //         sess.touch().save();
-    //     });
-    // });
-});
 
 // Set up routes
 app.get('/', routes.index);

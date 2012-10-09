@@ -78,8 +78,6 @@ exports.index = function(req, res, next, globalIo){
         params = req.query;
     }
 
-    console.log('params:', params);
-
     // If the request defines either GET or POST params it's because we're trying to load new data
     if (params) {
         var queryItems  = []
