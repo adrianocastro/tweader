@@ -11,6 +11,7 @@
         "express": "3.0.0rc4",
         "dustjs-linkedin": "*",
         "dustjs-helpers": "*",
+        "dustbuster": "*",
         "klei-dust":"*",
         "async":"*",
         "socket.io":"*"

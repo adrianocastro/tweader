@@ -61,6 +61,7 @@ function sortTweetsByDate (list) {
 };
 
 exports.index = function(req, res, next, globalIo){
+
     // console.log('globalIo', globalIo);
     // globalIo.socket.emit('newtweet', { foo: 'from exports.index bar' });
     // io.sockets.json.send(..);
@@ -141,15 +142,7 @@ exports.index = function(req, res, next, globalIo){
                     tweets = sortTweetsByDate(tweets);
 
                     if (req.params.json) {
-                        // res.send(tweets);
-                        var feedHtml,
-                            termsHtml;
-
-                        res.render('feed', { tweets: tweets }, function(err, html) {
-                            console.log('rendered feed');
-                            console.log('html feed', html);
-                            res.send({tweets: html, terms: terms});
-                        });
+                        res.send({ tweets: tweets, terms : terms });
                     }  else {
                         res.render('index', { title: 'Tweader', terms: terms, tweets: tweets });
                     }

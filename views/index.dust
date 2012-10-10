@@ -16,25 +16,16 @@
             </div>
         </form>
 
-        {?terms}
-            <ul id="topic-list">
-            {#terms}
-                <li data-id="{name}">{name} <button type="button" class="topic-remove">x</button></li>
-            {/terms}
-            </ul>
-        {:else}
-            <p>Please search for a #topic above.</p>
-        {/terms}
+        <p>Please search for a #topic above.</p>
+        <ul id="topic-list">
+            {>terms /}
+        </ul>
     </div>
     <div>
         <h2>Your feed</h2>
-        {?tweets}
-            <ol id="feed">
-                {>feed /}
-            </ol>
-        {:else}
-            <p>No tweets available at the moment.</p>
-        {/tweets}
+        <ol id="feed">
+            {>feed /}
+        </ol>
     </div>
 
 {/content}

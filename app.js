@@ -105,3 +105,11 @@ server.listen(app.get('port'), function(){
 app.get('/', routes.index);
 app.post('/', routes.index);
 app.get('/.:json?', routes.index);
+
+var dustbuster = require('dustbuster');
+
+dustbuster({
+    input: __dirname + '/views',
+    basename : 'tweader',
+    output: __dirname + '/public/js/dust.templates.js'
+});
