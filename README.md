@@ -1,5 +1,10 @@
 # Tweader
 
+## TODO
+- no-js: topic remove
+- use sessions to support multiple users
+- better error handling
+
 ## Description
 
 A very simple Twitter reader. Provides the user with a way to query a number of different topics and shows a self-updating real-time unified feed for the selected topics.

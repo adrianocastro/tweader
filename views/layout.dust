@@ -13,6 +13,6 @@
     <script src="/js/dust.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/dust.templates.js"></script>
-    <!--<script src="/socket.io/socket.io.js"></script>-->
+    <script src="/socket.io/socket.io.js"></script>
 </body>
 </html>

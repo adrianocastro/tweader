@@ -1,0 +1,3 @@
+{#terms}
+    <li data-id="{name}">{name} <button type="button" class="topic-remove">x</button></li>
+{/terms}

@@ -1,29 +1,155 @@
-// @TODO: better error handling
-var async = require('async');
+var async = require('async'),
+    // list of saved terms/queries
+    savedTerms = {},
+    // setInterval id
+    newTweetChecker,
+    // API config object
+    apiConfig = {
+        host: 'search.twitter.com',
+        port: 80,
+        basePath: '/search.json',
+        defaultArgs: '?lang=en&rpp=5&q='
+    };
 
-function fetch(opts, cb) {
-    var http = require('http');
-    opts.port = 80;
+// @TODO: clean up after the user disconnects
+// // Listen for user-disconnect and clean things up.
+// var sio = require('../lib/socket.io.js').sio();
+// sio.sockets.on('user-disconnected', function () {
+//     console.log('User disconnected. Cleaning up.');
+//     clearInterval(newTweetChecker);
+//     savedTerms = null;
+// });
 
-    var req = http.request(opts, function (res) {
-        var data = '';
-        res.on('data', function (chunk) {
-            data += chunk;
+var handlePageRequest = function (req, res) {
+    var params;
+
+    // Figure out if it's a POST or a GET request and read the params from the correct object in req
+    // @TODO: consider using req.param(name) (http://expressjs.com/api.html#req.param) instead to read q
+    if (req.body.q) {
+        params = req.body;
+    } else if (req.params.json) {
+        params = req.query;
+    }
+
+    // Request to remove a previously selected query
+    if (params && params.remove) {
+        delete(savedTerms[params.remove]);
+        if (Object.getOwnPropertyNames(savedTerms).length < 1) {
+            clearInterval(newTweetChecker);
+        }
+    }
+
+    // If the request defines either GET or POST params it's because we're trying to load new data
+    if (params) {
+        var queryItem = '',
+            terms     = [],
+            tweets    = [],
+            queue     = [];
+
+        // if the params object has q then it's a post query
+        if (params.q) {
+            queryItem  = params.q.trim();
+        }
+
+        // Save the query name under terms to be used to render on the view
+        terms.push({'name' : queryItem});
+        var isJson = true;
+
+        // Fetch tweets
+        fetchTweets(queryItem, function sendPayload(tweets) {
+            console.log('sendPayload()');
+            console.log('sendPayload(): tweets', tweets);
+            // If JSON call prepare to send JSON
+            if (req.params.json) {
+                // Send data over to client
+                res.send({ tweets: tweets, terms : terms });
+                // Create a listener to check for new tweets
+                checkForNewTweets();
+            }  else {
+                res.render('index', { title: 'Tweader', terms: terms, tweets: tweets });
+            }
         });
-        res.on('end', function () {
-          data = JSON.parse(data);
-          cb(null, data);
-        });
-    });
 
-    req.on('error', function (e) {
-        console.log(e.message);
-    });
+        // Save to the list of saved terms if not a dup
+        if (!savedTerms[queryItem]) {
+            savedTerms[queryItem] = {}
+        }
 
-    req.end();
-}
+    } else {
+        // If there are no params defined in the request then it's a new page refresh
+        res.render('index', { title: 'Tweader' });
+    }
 
-function sortTweetsByDate (list) {
+};
+
+var fetchTweets = function (queryItem, cb) {
+    console.log('fetchTweets()');
+
+    var io = require('../lib/io.js'),
+        queue  = [],
+        tweets = [],
+        termsToProcess = {};
+
+    if (queryItem) {
+        termsToProcess[queryItem] = {};
+    } else {
+        termsToProcess = savedTerms;
+    }
+
+    console.log('termsToProcess', termsToProcess);
+
+    for (var term in termsToProcess) {
+        if (termsToProcess.hasOwnProperty(term)) {
+            var queryPath = apiConfig.basePath + apiConfig.defaultArgs + encodeURIComponent(term);
+            if (!queryItem && termsToProcess[term].refreshUrl) {
+                queryPath = apiConfig.basePath + termsToProcess[term].refreshUrl;
+            }
+
+            queue.push(function (callback) {
+                apiConfig.path = queryPath;
+                io.fetch(apiConfig, callback);
+            });
+        }
+    }
+
+    if (queue.length > 0) {
+        async.parallel(
+            queue,
+            // Callback to handle the results
+            function handleResults (err, results){
+                results.forEach(function (result) {
+                    var term = decodeURIComponent(result.query);
+
+                    if (result.results.length > 0) {
+                        result.results.forEach(function (t) {
+                            t.origin = term;
+                            tweets.push(t);
+                        })
+                        console.log('New tweets have been found.');
+                    } else {
+                        console.log('No results found.');
+                        return false;
+                    }
+
+                    // Sort tweets by date
+                    tweets = sortTweetsByDate(tweets);
+
+                    // Store the id of the latest tweet
+                    if (!savedTerms[term]) {
+                        savedTerms[term] = {};
+                    }
+                    savedTerms[term].latestId   = tweets[0].id_str;
+                    savedTerms[term].refreshUrl = result.refresh_url
+                });
+
+                // Perform callback
+                cb(tweets);
+            }
+        );
+    }
+};
+
+var sortTweetsByDate = function (list) {
     // Use a map for sorting to avoid overhead
 
     // Map and result are temporary holders
@@ -60,97 +186,22 @@ function sortTweetsByDate (list) {
     return result;
 };
 
-exports.index = function(req, res, next, globalIo){
+var checkForNewTweets = function () {
+    console.log('checkForNewTweets()');
+    var sio = require('../lib/socket.io.js').sio();
 
-    // console.log('globalIo', globalIo);
-    // globalIo.socket.emit('newtweet', { foo: 'from exports.index bar' });
-    // io.sockets.json.send(..);
+    // Clear any previously existing intervals
+    clearInterval(newTweetChecker);
+    // Set a new interval listener for new tweets
+    newTweetChecker = setInterval(function() {
+        fetchTweets(null, function emitNewTweetsEvent(tweets) {
+            if (tweets.length > 0) {
+                sio.sockets.emit('new-tweets', { status: 'New tweets are in.', tweets: tweets });
+            }
+        });
+    }, 10000);
+}
 
-    // @TODO: read these from the user's input and previous selections (localStorage)
 
-    // Read the user's queried topics as well as previously saved ones
-    var params;
-
-    // Figure out if it's a POST or a GET request and read the params from the correct object in req
-    // @TODO: consider using req.param(name) (http://expressjs.com/api.html#req.param) instead to read q
-    if (req.body.q) {
-        params = req.body;
-    } else if (req.params.json) {
-        params = req.query;
-    }
-
-    // If the request defines either GET or POST params it's because we're trying to load new data
-    if (params) {
-        var queryItems  = []
-            savedItems  = []
-            terms       = [],
-            tweets      = [],
-            opts        = {},
-            queue       = [];
-
-        // if the params object as q then it's a post query
-        if (params.q) {
-            queryItems  = params.q.split(',');
-        }
-
-        // if the params object has savedTerms
-        if (params.savedTerms) {
-            savedItems  = params.savedTerms.split(',');
-        }
-
-        if (savedItems.length) {
-            // Merge new query items with previously saved ones
-            queryItems = queryItems.concat(savedItems);
-        }
-
-        // Check each topic (can be a hashtag, an @ reference or any query) to process
-        if (queryItems.length > 0) {
-            // Trim and remove empty results
-            // @TODO: dedupe results
-            queryItems = queryItems.map(function (item) {
-                return item.trim();
-            }).filter(function (item) {
-                return (item !== '');
-            });
-
-            queryItems.forEach(function (topic) {
-                queue.push(function (callback) {
-                    opts.host = 'search.twitter.com',
-                    opts.path = '/search.json?lang=en&rpp=5&q=' + encodeURIComponent(topic);
-                    fetch(opts, callback);
-                });
-                terms.push({'name' : topic});
-            });
-        }
-
-        // If we have a queue of topics/feeds to process run them in parallel
-        if (queue.length > 0) {
-            async.parallel(
-                queue,
-                // callback to handle the results
-                function(err, results){
-                    results.forEach(function (result) {
-                        if (result.results) {
-                            result.results.forEach(function (t) {
-                                t.origin = decodeURIComponent(result.query);
-                                tweets.push(t);
-                            })
-                        }
-                    });
-
-                    // Sort tweets by date
-                    tweets = sortTweetsByDate(tweets);
-
-                    if (req.params.json) {
-                        res.send({ tweets: tweets, terms : terms });
-                    }  else {
-                        res.render('index', { title: 'Tweader', terms: terms, tweets: tweets });
-                    }
-                }
-            );
-        }
-    // If there are no params defined in the request then it's a new page refresh
-    } else {
-        res.render('index', { title: 'Tweader (empty)' });
-    }
-};
+// Exports
+exports.index = handlePageRequest;
