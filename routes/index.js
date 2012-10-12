@@ -105,10 +105,12 @@ var fetchTweets = function (queryItem, cb) {
                 queryPath = apiConfig.basePath + termsToProcess[term].refreshUrl;
             }
 
-            queue.push(function (callback) {
-                apiConfig.path = queryPath;
-                io.fetch(apiConfig, callback);
-            });
+            queue.push((function(queryPath) {
+                return function (callback) {
+                    apiConfig.path = queryPath;
+                    io.fetch(apiConfig, callback);
+                }
+            })(queryPath));
         }
     }
 
