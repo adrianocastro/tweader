@@ -57,7 +57,6 @@ var handlePageRequest = function (req, res) {
 
         // Fetch tweets
         fetchTweets(queryItem, function sendPayload(tweets) {
-            console.log('sendPayload()');
             console.log('sendPayload(): tweets', tweets);
             // If JSON call prepare to send JSON
             if (req.params.json) {

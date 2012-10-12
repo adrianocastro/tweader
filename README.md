@@ -1,10 +1,5 @@
 # Tweader
 
-## TODO
-- no-js: topic remove
-- use sessions to support multiple users
-- better error handling
-
 ## Description
 
 A very simple Twitter reader. Provides the user with a way to query a number of different topics and shows a self-updating real-time unified feed for the selected topics.
@@ -15,32 +10,50 @@ For no-JS fallback the page refreshes for every query but keeps the list of prev
 
 ## Installation
 
-1. npm clone this repository
-1. cd to the clone dir
-1. npm install
-1. node app.js
-1. http://localhost:3000
+1. `npm clone https://github.com/adrianocastro/tweader.git`
+1. `cd tweader`
+1. `npm install`
+1. `node app.js`
+1. open `http://localhost:3000` on your browser
 
 ## Brief
 
-Build a twitter feed reader following these specifications and guidelines:
+Build a node.js based app that makes it possible for a user to look up topics on Twitter (via the Twitter API) and have them displayed on the browser in real-time. The user is able to add multiple queries but also remove them. Multiple feeds are merged inline, not split into two separate timelines.
 
-Server/NodeJS: lookup Twitter feeds or topics via  Twitter API and display them in the frontend in real-time. Should be able to retain the state of the users requests in memory, i.e. if the user adds one feed, then another, the two feeds should be stored so the user can subsequently switch between them. Multiple feeds or topics are merged inline, not split in to two separate timelines.
+No major constraints on the choice of technology but anything too magical should be avoided.
 
-Client: option to look up new feeds or topics and receive updates in real time. Should be able to add and remove feeds up watch updates in real time.
-
-## Constraints
-
-You are free to use any library of your choice.  It must, however, be chosen as if an entire team of engineers are asked to maintain it long term (so we strongly recommend not using anything too magical).
-
-## Evaluation
-
-The solution and design decisions will be graded on modularity, maintainability and readability.
+Aim for modularity, maintainability and readability.
 
 ## Notes
 
+This app runs on Express on top of node.js. It uses the [dust templating engine](http://linkedin.github.com/dustjs) and shares the templates on the client via [dustbuster](https://github.com/diffsky/dustbuster/). For real-time communication it uses [Socket.io](http://socket.io/). Additionally, [Async](https://github.com/caolan/async) is used as a helper utility.
+
+Most of the time spent on building this was around familiarising myself with Socket.io and learning how to best integrate it with Express. Figuring out the best way to share templates between the server and the client was also a key concern and, after some investigating, I chose to go with dust/dustbuster. Lastly, understanding the ins and outs of the Twitter API was also necessary for making this work.
+
+My original approach (please refer to the first commits against this repository) was aiming to have an app that worked fully without any client side JavaScript and then building on top of that. Though I managed to get this working (without real-time, obviously), keeping the original approach started to take too much time as I built up the full rich, one-page interaction. It should be perfectly doable and the app has mostly all it needs for it to happen but it needed more time and I was trying to get to a point where it fit a minimum set of requirements from the brief.
+
+## TODO
+
+- use sessions to support multiple users
+- better error handling
+- handle user disconnect by cleaning up after he’s left the building
+- better namespacing
+
+## References
+
 - Twitter Search REST API
     - https://dev.twitter.com/docs/api/1/get/search
-    - http://search.twitter.com/search.json?q=mtdiablo
+    - e.g. http://search.twitter.com/search.json?q=mtdiablo
 - Twitter Timeline REST API
-    - http://api.twitter.com/1/statuses/user_timeline.json?user_id=adrianocastro
+    - e.g. http://api.twitter.com/1/statuses/user_timeline.json?user_id=adrianocastro
+- Express
+    - http://expressjs.com/
+- Socket.io
+    - http://socket.io/
+    - https://github.com/LearnBoost/socket.io/wiki/Exposed-events
+- Dust
+    - http://linkedin.github.com/dustjs/
+    - http://akdubya.github.com/dustjs/
+    - https://github.com/diffsky/dustbuster/
+- Async
+    - https://github.com/caolan/async
