@@ -21,59 +21,50 @@ var async = require('async'),
 // });
 
 var handlePageRequest = function (req, res) {
-    var params;
+    // This is a simplified version of handlePageRequest that doesn’t support
+    // anything other than a fresh page load and subsequent Ajax requests via
+    // the json endpoint.
 
-    // Figure out if it's a POST or a GET request and read the params from the correct object in req
-    // @TODO: consider using req.param(name) (http://expressjs.com/api.html#req.param) instead to read q
-    if (req.body.q) {
-        params = req.body;
-    } else if (req.params.json) {
-        params = req.query;
-    }
+    // @TODO: add support for GET/POSTs requests for cases when there is
+    // no client-side JavaScript to execute the Ajax requests for data.
 
-    // Request to remove a previously selected query
-    if (params && params.remove) {
-        delete(savedTerms[params.remove]);
-        if (Object.getOwnPropertyNames(savedTerms).length < 1) {
-            clearInterval(newTweetChecker);
-        }
-    }
-
-    // If the request defines either GET or POST params it's because we're trying to load new data
-    if (params) {
-        var queryItem = '',
-            terms     = [],
-            tweets    = [],
-            queue     = [];
-
-        // if the params object has q then it's a post query
-        if (params.q) {
-            queryItem  = params.q.trim();
+    // If it hits the json endpoint then it's an Ajax request
+    if (req.params.json) {
+        // Request to remove a previously selected query
+        if (req.query.remove) {
+            // Remove item from savedTarms
+            delete(savedTerms[req.query.remove]);
+            // Clear the invertal if savedTerms is empty
+            if (Object.getOwnPropertyNames(savedTerms).length < 1) {
+                clearInterval(newTweetChecker);
+            }
         }
 
-        // Save the query name under terms to be used to render on the view
-        terms.push({'name' : queryItem});
-        var isJson = true;
+        // If the request defines either GET or POST params it's because we're trying to load new data
+        if (req.query.q) {
+            // fetch query
+            var queryItem = req.query.q.trim();
+                terms     = [],
+                tweets    = [],
+                queue     = [];
 
-        // Fetch tweets
-        fetchTweets(queryItem, function sendPayload(tweets) {
-            console.log('sendPayload(): tweets', tweets);
-            // If JSON call prepare to send JSON
-            if (req.params.json) {
+            // Save the query name under terms to be used to render on the view
+            terms.push({'name' : queryItem});
+
+            // Fetch tweets
+            fetchTweets(queryItem, function sendPayload(tweets) {
+                console.log('sendPayload(): tweets', tweets);
                 // Send data over to client
                 res.send({ tweets: tweets, terms : terms });
                 // Create a listener to check for new tweets
                 checkForNewTweets();
-            }  else {
-                res.render('index', { title: 'Tweader', terms: terms, tweets: tweets });
+            });
+
+            // Save to the list of saved terms if not a dup
+            if (!savedTerms[queryItem]) {
+                savedTerms[queryItem] = {}
             }
-        });
-
-        // Save to the list of saved terms if not a dup
-        if (!savedTerms[queryItem]) {
-            savedTerms[queryItem] = {}
         }
-
     } else {
         // If there are no params defined in the request then it's a new page refresh
         res.render('index', { title: 'Tweader' });
